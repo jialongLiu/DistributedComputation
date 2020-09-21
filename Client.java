@@ -2,6 +2,8 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
+import javax.print.DocFlavor.STRING;
+
 
 public class Client {
     public static void main(String[] args) throws UnknownHostException, IOException {
@@ -43,13 +45,20 @@ class FileClient{
             String msg = null;
             while ((msg = in.next()) != null) {
                 //发送给服务器端
-                pw.println(msg); 
+                if(msg.equals("get")){
+                    pw.println(msg);//先发送get消息
+                    if((msg = in.next()) != null){
+                        String fileName =msg;//要保存的文件名
+                        pw.println(fileName);//发送文件名
+                        us.getFile(fileName);//紧接着立刻通过UDPserver获取UDP客户端发来的文件内容信息
 
-                //  UDP接收服务器发来的信息
-                us.service();
-
-                if (msg.equals("bay")) {
-                break; //退出
+                    };
+                }else if(msg.equals("bay")) {
+                    break; //退出
+                }else{
+                    // 普通命令直接发送并监听UDP
+                    pw.println(msg); 
+                    us.service();//  UDP接收服务器发来的信息
                 }
             }
             in.close();
@@ -65,8 +74,6 @@ class FileClient{
             }
         }
     }
-
-
 }
 
 //UDP服务器端
@@ -99,4 +106,24 @@ class UdpServer {
 
 		}
 	}
+    
+    // 通过udp获取文件内容并返回字符串
+    public void getFile(String name) throws IOException {
+        // 创建文件
+        FileOutputStream fileOutput = new FileOutputStream(name);
+        while (true) {
+			DatagramPacket dp = new DatagramPacket(new byte[512], 512);//初始化数据包大小为512
+            socket.receive(dp); // 接收客户端信息并放到数据包里
+            // 判断结束符
+            String msg = new String(dp.getData(), 0, dp.getLength());
+            if(msg.equals("file is end!"))break;
+            fileOutput.write(msg.getBytes());
+            fileOutput.flush();
+            
+            // 获取并输出数据包中客户端信息
+            System.out.println(dp.getAddress() + ":" + dp.getPort() + ">" + msg);
+
+        }
+        fileOutput.close();
+    }
 }

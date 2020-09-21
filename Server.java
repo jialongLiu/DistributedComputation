@@ -130,18 +130,21 @@ class FileServer{
     
     //getProcess()get命令处理
     public void getProcess(UDPClient uc) throws IOException, InterruptedException {
-        uc.sendStr("next",socketAddress);//额外终止信息辅助跳出循环
+        //获取文件名
         br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String getFileName = br.readLine();
+
+        //循环获取文件并发送
         File getFile = new File(workFile+"\\"+getFileName);
         byte[] getFileByte = new byte[512];//限制每个udp包传送512
         FileInputStream fileInput = new FileInputStream(getFile);
         while(fileInput.read(getFileByte) != -1){
             uc.sendByteArray(getFileByte,socketAddress);
             TimeUnit.MICROSECONDS.sleep(1);
-            getFileByte = new byte[512];
+            getFileByte = new byte[512];//每次发送完byte[]要初始化
         }
         fileInput.close();
+        uc.sendStr("file is end!", socketAddress);
         
     }
     
