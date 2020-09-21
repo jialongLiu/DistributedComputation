@@ -1,6 +1,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 
@@ -138,10 +139,17 @@ class FileServer{
         File getFile = new File(workFile+"\\"+getFileName);
         byte[] getFileByte = new byte[512];//限制每个udp包传送512
         FileInputStream fileInput = new FileInputStream(getFile);
-        while(fileInput.read(getFileByte) != -1){
-            uc.sendByteArray(getFileByte,socketAddress);
-            TimeUnit.MICROSECONDS.sleep(1);
-            getFileByte = new byte[512];//每次发送完byte[]要初始化
+        int sizeOfByte=0;
+        while((sizeOfByte=fileInput.read(getFileByte)) != -1){
+            if(sizeOfByte !=512){
+                byte[] lastByteArray = Arrays.copyOf(getFileByte, sizeOfByte);
+                uc.sendByteArray(lastByteArray, socketAddress);
+            }else{
+                uc.sendByteArray(getFileByte,socketAddress);
+                TimeUnit.MICROSECONDS.sleep(1);
+                getFileByte = new byte[512];//每次发送完byte[]要初始化
+            }
+            
         }
         fileInput.close();
         uc.sendStr("file is end!", socketAddress);
@@ -178,6 +186,7 @@ class FileServer{
         }else if(brStr.equals("get")){
         //get命令处理
             getProcess(uc);
+            return "nothing";
         }else{
         //无效命令处理
             uc.sendStr("invalid command!", socketAddress);
