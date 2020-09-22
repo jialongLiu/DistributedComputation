@@ -53,7 +53,8 @@ class FileClient{
                         pw.println(fileName);//发送文件名
                         us.getFile(fileName);//紧接着立刻通过UDPserver获取UDP客户端发来的文件内容信息
                     };
-                }else if(msg.equals("bay")) {
+                }else if(msg.equals("bye")) {
+                    pw.println(msg); 
                     break; //退出
                 }else{
                     // 普通命令直接发送并监听UDP

@@ -2,6 +2,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.Arrays;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 
@@ -11,9 +12,17 @@ import java.util.concurrent.TimeUnit;
 public class Server{
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        // 测试ls命令
-        FileServer fs = new FileServer();
+        //服务器启动时需要传递root参数
+        System.out.println("please input root :");
+        Scanner sc = new Scanner(System.in);
+        String workpalce = sc.nextLine();
+        FileServer fs = new FileServer(workpalce);// 测试ls命令
         fs.server();
+        sc.close();
+
+        // // 测试入口（免输入root）
+        // FileServer fs = new FileServer("C:\\Users\\LLL\\Desktop");
+        // fs.server();
     }
 }
 
@@ -23,10 +32,25 @@ class FileServer{
     private Socket socket;
     private final int sport = 2021;
     private final int maxConnect = 2;
+    private String root = "";
     private String workFile = "C:\\Users\\LLL\\Desktop";//当前工作目录
     // private String workPath = "C:\\Users\\LLL\\Desktop";//当前工作目录
     private SocketAddress socketAddress ;
+    private String errMsg = "";
      
+    FileServer(String workplace) {
+        File workfile = new File(workplace);
+        if(workfile.exists() && workfile.isDirectory()){
+            root = workplace;//workfile经常变，但是root变量不变，所以每一次新的连接可以直接用root
+            workFile = workplace;
+            System.out.println("the input root is "+workplace);
+        }else{
+            errMsg = "the input root is not exist! so the root is C:\\Users\\LLL\\Desktop";
+            System.out.println(errMsg);
+        }
+    }
+
+    // TPC服务器启动
     public void server() throws InterruptedException {
         try{
             serverSocket = new ServerSocket(sport, maxConnect);
@@ -39,7 +63,7 @@ class FileServer{
             // 循环等待TCP建立连接
             while(true){
                 socket = serverSocket.accept();//等待客户机与服务器链接
-                workFile = "C:\\Users\\LLL\\Desktop";//每一次新的连接都转换当前工作目录为根目录
+                workFile = root;//每一次新的连接都转换当前工作目录为根目录，workfile经常变，但是root变量不变，所以每一次新的连接可以直接用root
                 System.out.println(socket.getInetAddress()+":"+socket.getPort()+">连接成功");
                 // 循环等待获取客户端发送的数据
                 while(true){
@@ -80,7 +104,7 @@ class FileServer{
         while ((info = br.readLine()) != null) {
             System.out.println(info); //输出用户发送的消息
             pw.println("you said:" + info); //向客户端返回用户发送的消息，println输出完后会自动刷新缓冲区
-            if (info.equals("bay")) { //如果用户输入“bye”就退出
+            if (info.equals("bye")) { //如果用户输入“bye”就退出
                 break;
             }
         }
@@ -206,8 +230,8 @@ class FileServer{
         }else if(brStr.equals("cd")){
         //cd命令处理
             cdProcess(uc);  
-        }else if(brStr.equals("bay")){
-        //bay命令处理     
+        }else if(brStr.equals("bye")){
+        //bye命令处理     
             uc.sendStr("end",socketAddress);//额外终止信息辅助跳出循环
             return "break";//实现了循环监听
         }else if(brStr.equals("get")){
