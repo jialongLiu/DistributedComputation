@@ -45,6 +45,7 @@ class FileServer{
             workFile = workplace;
             System.out.println("the input root is "+workplace);
         }else{
+            root = "C:\\Users\\LLL\\Desktop";
             errMsg = "the input root is not exist! so the root is C:\\Users\\LLL\\Desktop";
             System.out.println(errMsg);
         }
@@ -64,7 +65,9 @@ class FileServer{
             while(true){
                 socket = serverSocket.accept();//等待客户机与服务器链接
                 workFile = root;//每一次新的连接都转换当前工作目录为根目录，workfile经常变，但是root变量不变，所以每一次新的连接可以直接用root
-                System.out.println(socket.getInetAddress()+":"+socket.getPort()+">连接成功");
+                String successMsg = socket.getInetAddress()+":"+socket.getPort()+">连接成功";
+                System.out.println(successMsg);
+                outputTCP(successMsg);
                 // 循环等待获取客户端发送的数据
                 while(true){
 
@@ -95,19 +98,13 @@ class FileServer{
     }
 
     //给客户端发送you said信息
-    public void outputTCP(BufferedReader br) throws IOException {
+    public void outputTCP(String succeString) throws IOException {
         // 要给客户端发送的信息（you said）
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         // //装饰输出流，true,每写一行就刷新输出缓冲区，不用flush
         PrintWriter pw = new PrintWriter(bw,true);
-        String info = null; //接收用户输入的信息
-        while ((info = br.readLine()) != null) {
-            System.out.println(info); //输出用户发送的消息
-            pw.println("you said:" + info); //向客户端返回用户发送的消息，println输出完后会自动刷新缓冲区
-            if (info.equals("bye")) { //如果用户输入“bye”就退出
-                break;
-            }
-        }
+        String info = succeString; //发送tcp连接成功消息
+        pw.println(info); //向客户端返回用户发送的消息，println输出完后会自动刷新缓冲区
     }
 
     // 列出目标目录下所有文件返回一个string[]

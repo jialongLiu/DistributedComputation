@@ -27,6 +27,7 @@ class FileClient{
     public void client()throws UnknownHostException, IOException {
         socket = new Socket();
         socket.connect(new InetSocketAddress(host, cport));
+        tcpServerListen();
     }
     
     // TCP发送命令消息
@@ -59,7 +60,7 @@ class FileClient{
                 }else{
                     // 普通命令直接发送并监听UDP
                     pw.println(msg); 
-                    us.service();//  UDP接收服务器发来的信息
+                    us.udpServiceListen();//  UDP接收服务器发来的信息
                 }
             }
             in.close();
@@ -74,6 +75,15 @@ class FileClient{
                 }
             }
         }
+    }
+
+    //TCP服务器listen
+    public String tcpServerListen() throws IOException {
+        //客户端输入流，接收服务器消息
+        BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        String tcpMsg = br.readLine();
+        System.out.println(tcpMsg); //输出服务器返回的消息
+        return tcpMsg;
     }
 }
 
@@ -90,7 +100,7 @@ class UdpServer {
 	}
 
     // 循环接收port端口发来的信息
-	public void service() throws IOException {
+	public void udpServiceListen() throws IOException {
 		while (true) {
 			DatagramPacket dp = new DatagramPacket(new byte[512], 512);//初始化数据包大小为512
 			socket.receive(dp); // 接收客户端信息并放到数据包里
