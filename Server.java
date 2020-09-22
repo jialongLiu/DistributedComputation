@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 // 实现了循环监听
 // 利用类属性进行提示，并且转换当前目录，实现全局转换工作目录
+// 文件分割后，分别发送，最后一个udp包不够512进行判断，如果发送完最后一个包，额外发送尾部信息告知发送完毕。
 public class Server{
     public static void main(String[] args) throws IOException, InterruptedException {
 
@@ -134,26 +135,35 @@ class FileServer{
         //获取文件名
         br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String getFileName = br.readLine();
-
         //循环获取文件并发送
         File getFile = new File(workFile+"\\"+getFileName);
-        byte[] getFileByte = new byte[512];//限制每个udp包传送512
-        FileInputStream fileInput = new FileInputStream(getFile);
-        int sizeOfByte=0;
-        while((sizeOfByte=fileInput.read(getFileByte)) != -1){
-            if(sizeOfByte !=512){
-                byte[] lastByteArray = Arrays.copyOf(getFileByte, sizeOfByte);
-                uc.sendByteArray(lastByteArray, socketAddress);
-            }else{
-                uc.sendByteArray(getFileByte,socketAddress);
-                TimeUnit.MICROSECONDS.sleep(1);
-                getFileByte = new byte[512];//每次发送完byte[]要初始化
+        // 判断文件是否存在
+        if(!getFile.exists()){
+            // 如果文件不存在发送消息
+            uc.sendStr("file is not exists!", socketAddress);
+        }else{
+            // 文件存在打开文件并且传输
+            byte[] getFileByte = new byte[512];//限制每个udp包传送512
+            FileInputStream fileInput = new FileInputStream(getFile);
+            uc.sendStr("begin file!", socketAddress);//发送头部信息
+            int sizeOfByte=0;
+            //循环传送文件
+            while((sizeOfByte=fileInput.read(getFileByte)) != -1){
+                // String ss = new String(getFileByte);//测试转换为string出现乱码
+                // System.out.println( ss);//测试删掉
+                if(sizeOfByte !=512){
+                    byte[] lastByteArray = Arrays.copyOf(getFileByte, sizeOfByte);
+                    uc.sendByteArray(lastByteArray, socketAddress);
+                }else{//byte[]小于512，说明是最后一个包
+                    uc.sendByteArray(getFileByte,socketAddress);
+                    TimeUnit.MICROSECONDS.sleep(1);
+                    getFileByte = new byte[512];//每次发送完byte[]要初始化
+                }
+                
             }
-            
+            fileInput.close();
+            uc.sendStr("end file!", socketAddress);
         }
-        fileInput.close();
-        uc.sendStr("file is end!", socketAddress);
-        
     }
     
     //cd命令判断目录是否存在并给出提示

@@ -13,3 +13,11 @@
                 //输出服务器返回的消息
                 System.out.println(br.readLine()); 
 ```
+3. UDP传输文件的时候，千万别转换成string，直接用byte[]写文件即可，这样不会有乱码出现
+```
+            String msg = new String(dp.getData(), 0, dp.getLength());
+            if(msg.equals("file is end!"))break;
+            fileOutput.write(dp.getData());
+            // fileOutput.write(msg.getBytes());//不需要转换为string进行发送，会出现乱码
+            fileOutput.flush();
+```

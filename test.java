@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -63,6 +64,10 @@ public class test {
         //     Scanner sc = new Scanner(System.in,"GBK");
         //     System.out.println("you said:"+sc.nextLine()); //next中文乱码，会把它识别为空格。所以读不出来。nextline虽然也会乱码。但是不会停止。
         // }
+
+        // 测试fileoutputstream
+        FileOutputStream fops = new FileOutputStream("new");
+        fops.close();
         
     }
 }

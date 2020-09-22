@@ -2,7 +2,8 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-import javax.print.DocFlavor.STRING;
+
+
 
 
 public class Client {
@@ -36,7 +37,7 @@ class FileClient{
             PrintWriter pw = new PrintWriter(bw,true);//装饰输出流，及时刷新
 
             // 输入命令
-            Scanner in = new Scanner(System.in,"GBK"); //接受用户从控制台输入的信息
+            Scanner in = new Scanner(System.in); //接受用户从控制台输入的信息
 
             // 初始化UDP监听,初始化必须指定udp端口号
             UdpServer us = new UdpServer(2020);
@@ -51,7 +52,6 @@ class FileClient{
                         String fileName =msg;//要保存的文件名
                         pw.println(fileName);//发送文件名
                         us.getFile(fileName);//紧接着立刻通过UDPserver获取UDP客户端发来的文件内容信息
-
                     };
                 }else if(msg.equals("bay")) {
                     break; //退出
@@ -109,21 +109,37 @@ class UdpServer {
     
     // 通过udp获取文件内容并返回字符串
     public void getFile(String name) throws IOException {
-        // 创建文件
-        FileOutputStream fileOutput = new FileOutputStream(name);
         while (true) {
-			DatagramPacket dp = new DatagramPacket(new byte[512], 512);//初始化数据包大小为512
-            socket.receive(dp); // 接收客户端信息并放到数据包里
-            // 判断结束符
-            String msg = new String(dp.getData(), 0, dp.getLength());
-            if(msg.equals("file is end!"))break;
-            fileOutput.write(msg.getBytes());
-            fileOutput.flush();
+            // 创建接收数据的udp包
+            DatagramPacket dp = new DatagramPacket(new byte[512], 512);//初始化数据包大小为512
             
-            // 获取并输出数据包中客户端信息
-            System.out.println(dp.getAddress() + ":" + dp.getPort() + ">" + msg);
+            // 读取头部信息判断读文件开始标志
+            socket.receive(dp); // 接收客户端信息并放到数据包里
+            String msg = new String(dp.getData(), 0, dp.getLength());
+            if(msg.equals("begin file!")){
+                // 创建文件
+                FileOutputStream fileOutput = new FileOutputStream(name);
+                
+                // 循环读udp包并且写文件
+                while(true){
+                    socket.receive(dp);
+                    fileOutput.write(dp.getData());
+                    // fileOutput.write(msg.getBytes());//不需要转换为string进行发送，会出现乱码
+                    fileOutput.flush();
 
+                    // 判断结束符,跳出循环
+                    String dpStr = new String(dp.getData(), 0, dp.getLength());
+                    if(dpStr.equals("end file!"))break;//如果文件发送完毕，尾部信息获取并跳出循环。
+                }
+                fileOutput.close();
+                System.out.println("file is ok!");//文件发送完毕
+                break;
+            }else if(msg.equals("file is not exists!")){
+                System.out.println("file is not exists!");
+                break;
+            }
         }
-        fileOutput.close();
     }
+
+
 }
