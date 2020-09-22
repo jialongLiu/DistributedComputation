@@ -115,19 +115,36 @@ class FileServer{
         br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String path = br.readLine();
         if(path.equals("..")){
-            File tempFile = new File(workFile);
-            String parentPath = tempFile.getParent();
-            path = parentPath;
-        }else if(path.equals(".")){
-            path = "C:\\Users\\LLL\\Desktop";
-        }
+        // 上级目录
+            // 如果在根目录，则cd ..不进行操作
+            if(workFile.equals("C:\\Users\\LLL\\Desktop")){
+                path = workFile;
+                uc.sendStr("the dir is root,path : C:\\Users\\LLL\\Desktop", socketAddress);
+            }else{
+                File tempFile = new File(workFile);
+                String parentPath = tempFile.getParent();
+                path = parentPath;
 
-        //cd命令判断目录是否存在并给出提示
-        String tips = cdJudge(path);
-        String output = "path:"+path+"\n"+"tips:"+tips;
-        if(tips.equals("the dir is exist!"))workFile = path;//BUG修复：如果输入无效路径，工作目录不变
-        System.out.println(output);   
-        uc.sendStr(output, socketAddress); 
+                //cd命令判断目录是否存在并给出提示
+                String tips = cdJudge(path);
+                String output = "path:"+path+"\n"+"tips:"+tips;
+                if(tips.equals("the dir is exist!"))workFile = path;//BUG修复：如果输入无效路径，工作目录不变
+                System.out.println(output);   
+                uc.sendStr(output, socketAddress); 
+            }
+        }else if(path.equals(".")){
+        //当前目录
+            workFile = "C:\\Users\\LLL\\Desktop";
+            uc.sendStr("path : C:\\Users\\LLL\\Desktop", socketAddress);
+        }else{
+        //普通目录
+            //cd命令判断目录是否存在并给出提示
+            String tips = cdJudge(path);
+            String output = "path:"+path+"\n"+"tips:"+tips;
+            if(tips.equals("the dir is exist!"))workFile = path;//BUG修复：如果输入无效路径，工作目录不变
+            System.out.println(output);   
+            uc.sendStr(output, socketAddress); 
+        }
     }
     
     //getProcess()get命令处理
