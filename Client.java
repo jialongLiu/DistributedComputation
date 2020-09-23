@@ -27,7 +27,7 @@ class FileClient{
     public void client()throws UnknownHostException, IOException {
         socket = new Socket();
         socket.connect(new InetSocketAddress(host, cport));
-        tcpServerListen();
+        tcpConnectListen();
     }
     
     // TCP发送命令消息
@@ -60,7 +60,8 @@ class FileClient{
                 }else{
                     // 普通命令直接发送并监听UDP
                     pw.println(msg); 
-                    us.udpServiceListen();//  UDP接收服务器发来的信息
+                    tcpServerListen();
+                    // us.udpServiceListen();//  UDP接收服务器发来的信息 //修改为TCP交互
                 }
             }
             in.close();
@@ -77,13 +78,31 @@ class FileClient{
         }
     }
 
-    //TCP服务器listen
-    public String tcpServerListen() throws IOException {
-        //客户端输入流，接收服务器消息
+    //TCP监听连接消息
+    public void tcpConnectListen() throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        String tcpMsg = br.readLine();
-        System.out.println(tcpMsg); //输出服务器返回的消息
-        return tcpMsg;
+        String msg = br.readLine();
+        System.out.println(msg);
+    }
+
+    //TCP服务器listen
+    public void tcpServerListen() throws IOException {
+        while (true) {
+            //客户端输入流，接收服务器消息
+            BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String msg = br.readLine();
+            // System.out.println(msg); //输出服务器返回的消息
+            
+            // 获取并输出数据包中客户端信息
+            if(msg.equals("end")){
+                break;//额外终止信息辅助跳出循环
+            }else if(msg.equals("next")){
+                break;//中间操作，继续读取控制台信息，也就是空格后面的信息
+            }else{
+                System.out.println(msg);
+            }
+
+		}
     }
 }
 

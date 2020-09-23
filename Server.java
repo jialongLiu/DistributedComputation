@@ -6,9 +6,12 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 
+
 // 实现了循环监听
 // 利用类属性进行提示，并且转换当前目录，实现全局转换工作目录
 // 文件分割后，分别发送，最后一个udp包不够512进行判断，如果发送完最后一个包，额外发送尾部信息告知发送完毕。
+// 为了更好的鲁棒性，如果目录为真正根目录，也会提醒。如C盘
+
 public class Server{
     public static void main(String[] args) throws IOException, InterruptedException {
 
@@ -37,6 +40,8 @@ class FileServer{
     // private String workPath = "C:\\Users\\LLL\\Desktop";//当前工作目录
     private SocketAddress socketAddress ;
     private String errMsg = "";
+    private PrintWriter pw;
+    
      
     FileServer(String workplace) {
         File workfile = new File(workplace);
@@ -65,6 +70,13 @@ class FileServer{
             while(true){
                 socket = serverSocket.accept();//等待客户机与服务器链接
                 workFile = root;//每一次新的连接都转换当前工作目录为根目录，workfile经常变，但是root变量不变，所以每一次新的连接可以直接用root
+                
+                // 创建发送消息变量
+                BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                // //装饰输出流，true,每写一行就刷新输出缓冲区，不用flush
+                pw = new PrintWriter(bw);//修改ture删掉，不用自动flush
+
+                //发送连接成功消息
                 String successMsg = socket.getInetAddress()+":"+socket.getPort()+">连接成功";
                 System.out.println(successMsg);
                 outputTCP(successMsg);
@@ -98,13 +110,12 @@ class FileServer{
     }
 
     //给客户端发送you said信息
-    public void outputTCP(String succeString) throws IOException {
-        // 要给客户端发送的信息（you said）
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-        // //装饰输出流，true,每写一行就刷新输出缓冲区，不用flush
-        PrintWriter pw = new PrintWriter(bw,true);
+    public void outputTCP(String succeString) throws IOException, InterruptedException {
+        
         String info = succeString; //发送tcp连接成功消息
         pw.println(info); //向客户端返回用户发送的消息，println输出完后会自动刷新缓冲区
+        pw.flush();
+        Thread.sleep(30);//重要！解决连续发送TCP只接受到一个信息的问题。
     }
 
     // 列出目标目录下所有文件返回一个string[]
@@ -116,23 +127,26 @@ class FileServer{
     }
 
     //lsProcess()ls命令处理
-    public void lsProcess(UDPClient uc) throws IOException {
+    public void lsProcess() throws IOException, InterruptedException {
         // 获取目录下所有文件名存到string[]
         String[] filesName = lsGetdir(workFile);
         // 判断目录里是不是不存在文件
         if(filesName == null){
-            uc.sendStr("this dir have not things!", socketAddress);
+            outputTCP("this dir have not things!");
+            // uc.sendStr("this dir have not things!", socketAddress);//修改为TCP交互
         }else{
             // 发送目录下所有文件名（ls）
             for(int i =0; i < filesName.length;i++){
-                uc.sendStr(filesName[i],socketAddress);
+                outputTCP(filesName[i]);
+                // uc.sendStr(filesName[i],socketAddress);//修改为TCP交互
             }
         }
     }
     
     //cdProcess()cd命令处理
-    public void cdProcess(UDPClient uc) throws IOException {
-        uc.sendStr("next",socketAddress);//额外终止信息辅助跳出循环
+    public void cdProcess() throws IOException, InterruptedException {
+        outputTCP("next");
+        // uc.sendStr("next",socketAddress);//额外终止信息辅助跳出循环//修改为TCP完成交互
         br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String path = br.readLine();
         if(path.equals("..")){
@@ -140,7 +154,13 @@ class FileServer{
             // 如果在根目录，则cd ..不进行操作
             if(workFile.equals("C:\\Users\\LLL\\Desktop")){
                 path = workFile;
-                uc.sendStr("the dir is root,path : C:\\Users\\LLL\\Desktop", socketAddress);
+                outputTCP("the dir is root,path : C:\\Users\\LLL\\Desktop");
+                // uc.sendStr("the dir is root,path : C:\\Users\\LLL\\Desktop", socketAddress);//修改为TCP完成交互
+            }else if(workFile.equals("C:\\")|| workFile.equals("c:\\")){
+            // 如果当前目录为c盘，上一级没有，就回去
+                path = root;
+                workFile =root;
+                outputTCP("this dir is null!, so path : C:\\Users\\LLL\\Desktop");
             }else{
                 File tempFile = new File(workFile);
                 String parentPath = tempFile.getParent();
@@ -151,12 +171,14 @@ class FileServer{
                 String output = "path:"+path+"\n"+"tips:"+tips;
                 if(tips.equals("the dir is exist!"))workFile = path;//BUG修复：如果输入无效路径，工作目录不变
                 System.out.println(output);   
-                uc.sendStr(output, socketAddress); 
+                outputTCP(output);
+                // uc.sendStr(output, socketAddress); //修改为TCP完成交互
             }
         }else if(path.equals(".")){
         //当前目录
             workFile = "C:\\Users\\LLL\\Desktop";
-            uc.sendStr("path : C:\\Users\\LLL\\Desktop", socketAddress);
+            outputTCP("path : C:\\Users\\LLL\\Desktop");
+            // uc.sendStr("path : C:\\Users\\LLL\\Desktop", socketAddress);//修改为TCP完成交互
         }else{
         //普通目录
             //cd命令判断目录是否存在并给出提示
@@ -168,7 +190,8 @@ class FileServer{
                 output = "unknown dir!";
             }
             System.out.println(output);   
-            uc.sendStr(output, socketAddress); 
+            outputTCP(output);
+            // uc.sendStr(output, socketAddress); //修改为TCP完成交互
         }
     }
     
@@ -227,13 +250,14 @@ class FileServer{
 
         if(brStr.equals("ls")){
         // ls命令处理
-            lsProcess(uc);
+            lsProcess();
         }else if(brStr.equals("cd")){
         //cd命令处理
-            cdProcess(uc);  
+            cdProcess();  
         }else if(brStr.equals("bye")){
         //bye命令处理     
-            uc.sendStr("end",socketAddress);//额外终止信息辅助跳出循环
+            outputTCP("end");
+            // uc.sendStr("end",socketAddress);//额外终止信息辅助跳出循环//修改为TCP完成交互
             return "break";//实现了循环监听
         }else if(brStr.equals("get")){
         //get命令处理
@@ -241,9 +265,11 @@ class FileServer{
             return "nothing";
         }else{
         //无效命令处理
-            uc.sendStr("unknown cmd!", socketAddress);
+            outputTCP("unknown cmd!");
+            // uc.sendStr("unknown cmd!", socketAddress);//修改为TCP完成交互
         }
-        uc.sendStr("end",socketAddress);//额外终止信息辅助跳出循环
+        outputTCP("end");
+        // uc.sendStr("end",socketAddress);//额外终止信息辅助跳出循环//修改为TCP交互
         return "nothing";
     }
 

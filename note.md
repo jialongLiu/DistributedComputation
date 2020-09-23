@@ -21,3 +21,14 @@
             // fileOutput.write(msg.getBytes());//不需要转换为string进行发送，会出现乱码
             fileOutput.flush();
 ```
+4. 解决连续发送TCP只接受到一个信息的问题。TCP用BufferedReader接受数据速度跟不上TCP发送的速度，所以手动flush+线程睡眠，能够让tcp按顺序发送
+```
+//给客户端发送you said信息
+    public void outputTCP(String succeString) throws IOException, InterruptedException {
+        
+        String info = succeString; //发送tcp连接成功消息
+        pw.println(info); //向客户端返回用户发送的消息，println输出完后会自动刷新缓冲区
+        pw.flush();
+        Thread.sleep(10);
+    }
+```
