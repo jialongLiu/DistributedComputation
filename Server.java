@@ -162,7 +162,11 @@ class FileServer{
             //cd命令判断目录是否存在并给出提示
             String tips = cdJudge(path);
             String output = "path:"+path+"\n"+"tips:"+tips;
-            if(tips.equals("the dir is exist!"))workFile = path;//BUG修复：如果输入无效路径，工作目录不变
+            if(tips.equals("the dir is exist!")){
+                workFile = path;//BUG修复：如果输入无效路径，工作目录不变
+            }else if(tips.equals("the dir is not exist!")){
+                output = "unknown dir!";
+            }
             System.out.println(output);   
             uc.sendStr(output, socketAddress); 
         }
@@ -237,7 +241,7 @@ class FileServer{
             return "nothing";
         }else{
         //无效命令处理
-            uc.sendStr("invalid command!", socketAddress);
+            uc.sendStr("unknown cmd!", socketAddress);
         }
         uc.sendStr("end",socketAddress);//额外终止信息辅助跳出循环
         return "nothing";

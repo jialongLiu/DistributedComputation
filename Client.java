@@ -146,7 +146,7 @@ class UdpServer {
                 System.out.println("file is ok!");//文件发送完毕
                 break;
             }else if(msg.equals("file is not exists!")){
-                System.out.println("file is not exists!");
+                System.out.println("unknown file");
                 break;
             }
         }
