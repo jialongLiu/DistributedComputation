@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 // 利用类属性进行提示，并且转换当前目录，实现全局转换工作目录
 // 文件分割后，分别发送，最后一个udp包不够512进行判断，如果发送完最后一个包，额外发送尾部信息告知发送完毕。
 // 为了更好的鲁棒性，如果目录为真正根目录，也会提醒。如C盘
+//兼容两种cd命令， 可以绝对路径，也可以相对路径。
 
 public class Server{
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -202,8 +203,12 @@ class FileServer{
             String output = "path:"+path+"\n"+"tips:"+tips;
             if(tips.equals("the dir is exist!")){
                 workFile = path;//BUG修复：如果输入无效路径，工作目录不变
+                output = workFile+" > "+"OK";
             }else if(tips.equals("the dir is not exist!")){
                 output = "unknown dir!";
+            }else {
+                workFile = cdJudge(path);
+                output = workFile +" > "+"OK";
             }
             System.out.println(output);   
             outputTCP(output);
@@ -263,11 +268,29 @@ class FileServer{
         File newf = new File(nowPath);
         if(newf.exists()){
             return "the dir is exist!";
-        }else{
+        }else if(cdJudgeNow(nowPath).equals("is dic, not in!")|| cdJudgeNow(nowPath).equals("unknow dic")){
             return "the dir is not exist!";
+        }else{
+            return cdJudgeNow(nowPath);
         }
 
     };
+
+    //cd判断当前目录是否存在该文件夹
+    public String cdJudgeNow(String filename) {
+        File rootFile = new File(workFile);
+        File[] fileList = rootFile.listFiles();
+        for (int i = 0; i < fileList.length; i++){
+			if (fileList[i].getName().equals(filename)){//找到了同名的文件夹或文件
+				if (fileList[i].isDirectory()){//名字对应文件夹
+				    return workFile+"\\"+filename;
+				}else{// 名字对应文件
+					return "is dic, not in!";
+				}
+			}
+		}
+        return "unknow dic";
+    }
 
     // 发送ls命令的结果
     public String cmdProcess(UDPClient uc) throws IOException, InterruptedException {
