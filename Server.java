@@ -126,6 +126,21 @@ class FileServer{
         return workplace.list();
     }
 
+    //将ls发送子文件信息进行封装
+    public String packageFileDir(String fn) {
+        File tf = new File(fn);
+        String res ="";
+        if(tf.isDirectory()){
+            res = "<dir>"+"     "+tf.getName();
+        }else if(tf.isFile()){
+            res = "<file>"+"    "+tf.getName();
+        }
+        for(int i = 24-tf.getName().length(); i>0;i-- ){
+            res = res +" ";
+        }
+        return res+tf.length()+"B";
+    }
+
     //lsProcess()ls命令处理
     public void lsProcess() throws IOException, InterruptedException {
         // 获取目录下所有文件名存到string[]
@@ -137,7 +152,7 @@ class FileServer{
         }else{
             // 发送目录下所有文件名（ls）
             for(int i =0; i < filesName.length;i++){
-                outputTCP(filesName[i]);
+                outputTCP(packageFileDir(workFile+"\\"+ filesName[i]));
                 // uc.sendStr(filesName[i],socketAddress);//修改为TCP交互
             }
         }

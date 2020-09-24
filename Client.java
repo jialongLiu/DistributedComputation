@@ -90,7 +90,7 @@ class FileClient{
         while (true) {
             //客户端输入流，接收服务器消息
             BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            String msg = br.readLine();
+               String msg = br.readLine();
             // System.out.println(msg); //输出服务器返回的消息
             
             // 获取并输出数据包中客户端信息
