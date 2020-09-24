@@ -1,3 +1,5 @@
+package real;
+
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;
@@ -114,15 +116,14 @@ class UdpServer {
     // 初始化并启动监听port端口
 	public UdpServer(int udpPort) throws SocketException {
         port = udpPort;
-		socket = new DatagramSocket(port); // 服务端DatagramSocket
-        System.out.println("UDP服务器初始化。");
 	}
 
     // 循环接收port端口发来的信息
 	public void udpServiceListen() throws IOException {
+		socket = new DatagramSocket(port); // 服务端DatagramSocket
 		while (true) {
 			DatagramPacket dp = new DatagramPacket(new byte[512], 512);//初始化数据包大小为512
-			socket.receive(dp); // 接收客户端信息并放到数据包里
+            socket.receive(dp); // 接收客户端信息并放到数据包里
 			String msg = new String(dp.getData(), 0, dp.getLength());
             
             // 获取并输出数据包中客户端信息
@@ -133,12 +134,13 @@ class UdpServer {
             }else{
                 System.out.println(dp.getAddress() + ":" + dp.getPort() + ">" + msg);
             }
-
-		}
+        }
+        socket.close();
 	}
     
     // 通过udp获取文件内容并返回字符串
     public void getFile(String name) throws IOException {
+		socket = new DatagramSocket(port); // 服务端DatagramSocket
         while (true) {
             // 创建接收数据的udp包
             DatagramPacket dp = new DatagramPacket(new byte[512], 512);//初始化数据包大小为512
@@ -174,6 +176,7 @@ class UdpServer {
                 break;
             }
         }
+        socket.close();
     }
 
 
