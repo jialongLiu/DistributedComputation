@@ -36,7 +36,7 @@ class FileServer{
     private final int sport = 2021;
     private final int maxConnect = 2;
     private String root = "";
-    private String workFile = "C:\\Users\\LLL\\Desktop";//当前工作目录
+    private String workFile = "D:\\gitLab\\root";//当前工作目录
     // private String workPath = "C:\\Users\\LLL\\Desktop";//当前工作目录
     private SocketAddress socketAddress ;
     private String errMsg = "";
@@ -50,8 +50,8 @@ class FileServer{
             workFile = workplace;
             System.out.println("the input root is "+workplace);
         }else{
-            root = "C:\\Users\\LLL\\Desktop";
-            errMsg = "the input root is not exist! so the root is C:\\Users\\LLL\\Desktop";
+            root = "D:\\gitLab\\root";
+            errMsg = "the input root is not exist! so the root is D:\\gitLab\\root";
             System.out.println(errMsg);
         }
     }
@@ -164,18 +164,19 @@ class FileServer{
         // uc.sendStr("next",socketAddress);//额外终止信息辅助跳出循环//修改为TCP完成交互
         br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String path = br.readLine();
+        System.out.println(path);//ljl
         if(path.equals("..")){
         // 上级目录
             // 如果在根目录，则cd ..不进行操作
-            if(workFile.equals("C:\\Users\\LLL\\Desktop")){
+            if(workFile.equals("D:\\gitLab\\root")){
                 path = workFile;
-                outputTCP("the dir is root,path : C:\\Users\\LLL\\Desktop");
+                outputTCP("the dir is root,path : D:\\gitLab\\root");
                 // uc.sendStr("the dir is root,path : C:\\Users\\LLL\\Desktop", socketAddress);//修改为TCP完成交互
-            }else if(workFile.equals("C:\\")|| workFile.equals("c:\\")){
+            }else if(workFile.equals("D:\\")|| workFile.equals("d:\\")){
             // 如果当前目录为c盘，上一级没有，就回去
                 path = root;
                 workFile =root;
-                outputTCP("this dir is null!, so path : C:\\Users\\LLL\\Desktop");
+                outputTCP("this dir is null!, so path : D:\\gitLab\\root");
             }else{
                 File tempFile = new File(workFile);
                 String parentPath = tempFile.getParent();
@@ -191,8 +192,8 @@ class FileServer{
             }
         }else if(path.equals(".")){
         //当前目录
-            workFile = "C:\\Users\\LLL\\Desktop";
-            outputTCP("path : C:\\Users\\LLL\\Desktop");
+            workFile = "D:\\gitLab\\root";
+            outputTCP("path : D:\\gitLab\\root");
             // uc.sendStr("path : C:\\Users\\LLL\\Desktop", socketAddress);//修改为TCP完成交互
         }else{
         //普通目录
@@ -217,14 +218,18 @@ class FileServer{
         String getFileName = br.readLine();
         //循环获取文件并发送
         File getFile = new File(workFile+"\\"+getFileName);
+        Thread.sleep(100);//保证在发消息的时候，客户端已经准备好了接收。
         // 判断文件是否存在
         if(!getFile.exists()){
             // 如果文件不存在发送消息
             uc.sendStr("file is not exists!", socketAddress);
+        }else if(getFile.isDirectory()){
+            uc.sendStr("it is a directory!", socketAddress);
         }else{
             // 文件存在打开文件并且传输
             byte[] getFileByte = new byte[512];//限制每个udp包传送512
-            FileInputStream fileInput = new FileInputStream(getFile);
+            BufferedInputStream fileInput = new BufferedInputStream(new FileInputStream(getFile));//务必要用bufferreader，否则文件最后一行乱码。
+            // FileInputStream fileInput = new FileInputStream(getFile);
             uc.sendStr("begin file!", socketAddress);//发送头部信息
             int sizeOfByte=0;
             //循环传送文件
@@ -232,16 +237,23 @@ class FileServer{
                 // String ss = new String(getFileByte);//测试转换为string出现乱码
                 // System.out.println( ss);//测试删掉
                 if(sizeOfByte !=512){
-                    byte[] lastByteArray = Arrays.copyOf(getFileByte, sizeOfByte);
+                    byte[] lastByteArray = new byte[sizeOfByte];
+                    lastByteArray = Arrays.copyOf(getFileByte, sizeOfByte);
                     uc.sendByteArray(lastByteArray, socketAddress);
+                    Thread.sleep(100);
+                    String ss = new String(lastByteArray,0,lastByteArray.length);
+                    System.out.println(ss);
+                    getFileByte = new byte[512];//每次发送完byte[]要初始化
                 }else{//byte[]小于512，说明是最后一个包
                     uc.sendByteArray(getFileByte,socketAddress);
-                    TimeUnit.MICROSECONDS.sleep(1);
+                    TimeUnit.MICROSECONDS.sleep(10);
                     getFileByte = new byte[512];//每次发送完byte[]要初始化
                 }
                 
+                
             }
             fileInput.close();
+            Thread.sleep(100);//等待客户端开始接收消息。
             uc.sendStr("end file!", socketAddress);
         }
     }

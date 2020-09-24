@@ -153,19 +153,24 @@ class UdpServer {
                 // 循环读udp包并且写文件
                 while(true){
                     socket.receive(dp);
-                    fileOutput.write(dp.getData());
-                    // fileOutput.write(msg.getBytes());//不需要转换为string进行发送，会出现乱码
-                    fileOutput.flush();
 
                     // 判断结束符,跳出循环
                     String dpStr = new String(dp.getData(), 0, dp.getLength());
                     if(dpStr.equals("end file!"))break;//如果文件发送完毕，尾部信息获取并跳出循环。
+
+                    //写入文件
+                    fileOutput.write(dp.getData(),0,dp.getLength());
+                    // fileOutput.write(msg.getBytes());//不需要转换为string进行发送，会出现乱码
+                    fileOutput.flush();
                 }
                 fileOutput.close();
                 System.out.println("file is ok!");//文件发送完毕
                 break;
             }else if(msg.equals("file is not exists!")){
                 System.out.println("unknown file");
+                break;
+            }else{
+                System.out.println("it is a directory!");
                 break;
             }
         }
